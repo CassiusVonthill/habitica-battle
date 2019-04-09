@@ -18,11 +18,11 @@ if (process.env.NODE_ENV == 'development') {
 
 var Habitica = require('habitica')
 var api = new Habitica()
-api.localLogin(
-    process.env.VUE_APP_HABITICA_USERNAME,
-    process.env.VUE_APP_HABITICA_PASSWORD
-).then(res => {
-    console.log(res.data)
-    console.log(api.get('/user'))
-})
-Object.defineProperty(Vue.prototype, 'api', { value: api })
+// api.localLogin(
+//     process.env.VUE_APP_HABITICA_USERNAME,
+//     process.env.VUE_APP_HABITICA_PASSWORD
+// ).then(res => {
+//     console.log(res.data)
+//     console.log(api.get('/user'))
+// })
+Object.defineProperty(Vue.prototype, '$api', { value: api })
