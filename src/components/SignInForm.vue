@@ -13,6 +13,7 @@
             :counter="36"
             :rules="authRules"
             required
+            type="password"
         ></v-text-field>
 
         <v-btn :disabled="!valid" color="purple" @click="authenticate"
@@ -43,12 +44,19 @@ export default {
     methods: {
         authenticate() {
             if (this.$refs.authForm.validate()) {
-                console.log(this.userID)
-                console.log(this.apiToken)
-                // this.$api.setOptions({
-                //     id: userID,
-                //     apiToken: apiToken
-                // })
+                this.$api.setOptions({
+                    id: this.userID,
+                    apiToken: this.apiToken
+                })
+                this.$api.get('/user').then(res => {
+                    // There has to be a better way to do this.
+                    // Surely we could pattern match or something?
+                    let currentUser = new Object()
+                    currentUser.id = res.data.id
+                    currentUser.name = res.data.profile.name
+                    currentUser.challenges = res.data.challenges
+                    currentUser.guilds = [...res.data.guilds, 'party']
+                })
             }
         }
     }
