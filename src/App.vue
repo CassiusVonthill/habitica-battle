@@ -5,6 +5,8 @@
         <v-content>
             <router-view />
         </v-content>
+
+        <v-footer color="purple" app></v-footer>
     </v-app>
 </template>
 
