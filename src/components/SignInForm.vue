@@ -35,7 +35,10 @@ export default {
         valid: true,
         authRules: [
             v => !!v || 'Field is required',
-            v => (v && v.length == 36) || 'Field must be 36 characters'
+                v => (v && v.length == 36) || 'Field must be 36 characters',
+                v =>
+                    !RegExp('[^A-Za-z0-9-]').test(v) ||
+                    'Field can only contain alphanumeric and dash (-) characters'
         ]
     }
   }
