@@ -7,7 +7,7 @@
                         <div class="headline">Sign In</div>
                     </v-card-title>
                     <v-card-text>
-                        <SignInForm></SignInForm>
+                        <sign-in-form></sign-in-form>
                     </v-card-text>
                 </v-card>
             </v-flex>
