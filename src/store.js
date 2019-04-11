@@ -5,28 +5,34 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
     state: {
-        userName: '',
-        userGroups: ['party'],
-        userChallenges: [],
+        user: {
+            name: '',
+            groups: ['party'],
+            challenges: []
+        },
         targetChallenge: '',
-        targetGroupOne: '',
-        targetGroupTwo: '',
-        authenticated: false,
-
+        targetGroupOne: {
+            name: '',
+            avg: 0
+        },
+        targetGroupTwo: {
+            name: '',
+            avg: 0
+        },
+        authenticated: false
     },
     mutations: {
         addUserData(state, newUser) {
-            state.userName = newUser.data.profile.name
-            state.userChallenges = newUser.data.challenges
-            state.userGroups.concat(newUser.data.guilds)
+            state.user.name = newUser.data.profile.name
+            state.user.challenges = newUser.data.challenges
+            state.user.groups.concat(newUser.data.guilds)
         },
         setAuthenticated(state, val) {
             state.authenticated = val
         },
-        setAuthenticated(state) {
-            setAuthenticated(state, true)
+        setAuthenticatedTrue(state) {
+            this.setAuthenticated(state, true)
         }
-
     },
     actions: {
         userName: state => state.userName,
