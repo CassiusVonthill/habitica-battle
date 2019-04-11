@@ -43,7 +43,11 @@ export default {
 
     methods: {
         authenticate() {
-            if (this.$refs.authForm.validate()) {
+            if (
+                this.$refs.authForm.validate() &&
+                this.userID !== '' &&
+                this.apiToken !== ''
+            ) {
                 this.$api.setOptions({
                     id: this.userID,
                     apiToken: this.apiToken
@@ -57,6 +61,8 @@ export default {
                     currentUser.challenges = res.data.challenges
                     currentUser.guilds = [...res.data.guilds, 'party']
                 })
+            } else {
+                console.log('User tried to authenticate')
             }
         }
     }
