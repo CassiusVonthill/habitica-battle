@@ -29,3 +29,4 @@ yarn-error.log*
 Session.vim
 .netrwhist
 
+examples/*
