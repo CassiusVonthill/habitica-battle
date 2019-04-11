@@ -26,9 +26,7 @@
                 dense
             ></v-combobox>
 
-            <v-btn :disabled="!valid" color="purple" @click="battle"
-                >Battle!</v-btn
-            >
+      <v-btn :disabled="!valid" color="purple" @click>Battle!</v-btn>
         </v-form>
     </v-container>
 </template>
