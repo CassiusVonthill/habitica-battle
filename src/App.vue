@@ -12,10 +12,13 @@
 
 <script>
 import AppNavigator from '@/components/AppNavigator'
+// import Store from './store/store'
+
 
 export default {
     components: {
-        AppNavigator
+        AppNavigator,
+        // Store
     },
     name: 'App',
     data() {
