@@ -1,6 +1,6 @@
 <template>
     <div>
-        <v-alert :value="alert.msg" :type=alert.type>{{ alert.msg }}</v-alert>
+        <v-alert v-if="alert.type" :value="alert.msg" :type="alert.type">{{ alert.msg }}</v-alert>
         <v-form lazy-validation v-model="validForm" ref="authForm">
             <v-text-field
                 v-model="userID"
