@@ -10,37 +10,50 @@ export default new Vuex.Store({
             groups: ['party'],
             challenges: []
         },
-        targetChallenge: '',
+        targetChallenge: {
+            name: '',
+            members: []
+        },
         targetGroupOne: {
             name: '',
-            avg: 0
+            avg: 0,
+            members: []
         },
         targetGroupTwo: {
             name: '',
-            avg: 0
+            avg: 0,
+            members: []
         },
         authenticated: false
     },
     mutations: {
         addUserData(state, newUser) {
-            state.user.name = newUser.data.profile.name
-            state.user.challenges = newUser.data.challenges
-            state.user.groups.concat(newUser.data.guilds)
+            state.user.name = newUser.profile.name
+            state.user.groups.concat(newUser.guilds)
+            state.user.challenges = newUser.challenges
+            state.authenticated = true
         },
         setAuthenticated(state, val) {
             state.authenticated = val
-        },
-        setAuthenticatedTrue(state) {
-            this.setAuthenticated(state, true)
         }
     },
     actions: {
-        userName: state => state.userName,
-        userGroups: state => state.userGroups,
-        userChallenges: state => state.userChallenges,
-        targetChallenge: state => state.targetChallenge,
-        targetGroupOne: state => state.targetGroupOne,
-        targetGroupTwo: state => state.targetGroupTwo,
-        authenticated: state => state.authenticated
-    }
+        getUser(commit, userID, apiToken) {
+            this.$api.setOptions({ id: userID, apiToken: apiToken })
+
+            this.$api
+                .get('/user')
+                .then(res => {
+                    commit('addUserData', res.data)
+                    return [
+                        'sucess',
+                        'Your credentials check out, please wait as we process some data...'
+                    ]
+                })
+                .catch(err => {
+                    return ['error', err.message]
+                })
+        }
+    },
+    getters: {}
 })
