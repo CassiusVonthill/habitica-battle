@@ -32,7 +32,7 @@ export default new Vuex.Store({
     mutations: {
         addUserData(state, newUser) {
             state.user.name = newUser.profile.name
-            state.user.groups.concat(newUser.guilds)
+            state.user.groups = [...newUser.guilds, 'party']
             state.user.challenges = newUser.challenges
             state.authenticated = true
         },
