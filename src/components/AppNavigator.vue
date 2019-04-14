@@ -9,6 +9,9 @@
         </v-toolbar-items>
         <v-spacer></v-spacer>
         <v-toolbar-items>
+            <v-btn color="purple darken-2" v-if="authenticated">{{
+                authenticatedUser
+            }}</v-btn>
             <v-btn v-once flat small>
                 <v-icon color="white">mdi-refresh</v-icon>
             </v-btn>
@@ -21,8 +24,15 @@ export default {
     name: 'AppNavigator',
     data() {
         return {
-            isDevEnv: process.env.NODE_ENV == 'development',
-            isAuthenticated: false
+            isDevEnv: process.env.NODE_ENV == 'development'
+        }
+    },
+    computed: {
+        authenticated() {
+            return this.$store.state.authenticated
+        },
+        authenticatedUser() {
+            return this.$store.state.user.name
         }
     }
 }

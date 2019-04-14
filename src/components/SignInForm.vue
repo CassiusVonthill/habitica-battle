@@ -63,26 +63,23 @@ export default {
                 this.apiToken !== ''
             ) {
                 this.isLoading = true
-                this.$api.setOptions({
-                    id: this.userID,
-                    apiToken: this.apiToken
-                })
-                this.$api
-                    .get('/user')
+                this.$store
+                    .dispatch('getUser', {
+                        userID: this.userID,
+                        apiToken: this.apiToken
+                    })
                     .then(res => {
-                        this.alert.msg =
-                            'Your credentials check out, please wait as we process some data...'
-                        this.alert.type = 'success'
-                        // There has to be a better way to do this.
-                        // Surely we could pattern match or something?
-                        console.log(res)
+                        this.alert = {
+                            type: 'success',
+                            msg: res
+                        }
                     })
                     .catch(err => {
-                        this.alert.msg = err.message
-                        this.alert.type = 'error'
-                        console.log(err.message)
+                        this.alert = { type: 'error', msg: err }
                     })
                 this.isLoading = false
+
+                this.$router.push({ name: 'dashboard' })
             }
         }
     }

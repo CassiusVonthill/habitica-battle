@@ -1,7 +1,10 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+var Habitica = require('habitica')
 
 Vue.use(Vuex)
+
+var api = new Habitica()
 
 export default new Vuex.Store({
     state: {
@@ -38,21 +41,21 @@ export default new Vuex.Store({
         }
     },
     actions: {
-        getUser(commit, userID, apiToken) {
-            this.$api.setOptions({ id: userID, apiToken: apiToken })
+        getUser(context, { userID, apiToken }) {
+            return new Promise((resolve, reject) => {
+                api.setOptions({ id: userID, apiToken: apiToken })
 
-            this.$api
-                .get('/user')
-                .then(res => {
-                    commit('addUserData', res.data)
-                    return [
-                        'sucess',
-                        'Your credentials check out, please wait as we process some data...'
-                    ]
-                })
-                .catch(err => {
-                    return ['error', err.message]
-                })
+                api.get('/user')
+                    .then(res => {
+                        context.commit('addUserData', res.data)
+                        resolve(
+                            'Your credentials check out, please wait as we process some data...'
+                        )
+                    })
+                    .catch(err => {
+                        reject(err.message)
+                    })
+            })
         }
     },
     getters: {}
