@@ -56,6 +56,27 @@ export default new Vuex.Store({
                         reject(err.message)
                     })
             })
+        },
+        // Assumes that all data for the target params has been previously gathered
+        battle(context, { targetGroupOne, targetGroupTwo, targetChallenge }) {
+            let getMembersInChallenge = groupMembers =>
+                groupMembers.filter(member => targetChallenge.has(member))
+
+            let [gOneChallengeMembers, gTwoChallengeMembers] = [
+                (targetGroupOne, targetGroupTwo)
+            ].map(group => getMembersInChallenge(group.members))
+
+            let intersectionMembers = gOneChallengeMembers.filter(member =>
+                gTwoChallengeMembers.has(member)
+            )
+
+            let uniqueGroupOneMembers = gOneChallengeMembers.filter(
+                member => !intersectionMembers.has(member)
+            )
+
+            let uniqueGroupTwoMembers = gTwoChallengeMembers.filter(
+                member => !intersectionMembers.has(member)
+            )
         }
     },
     getters: {}
