@@ -64,10 +64,10 @@ export default new Vuex.Store({
             }
             switch (id) {
                 case 1:
-                    state.targetGroupOne = temp
+                    state.targetGroupOne = { ...state.targetGroupOne, ...temp }
                     break
                 case 2:
-                    state.targetGroupTwo = temp
+                    state.targetGroupTwo = { ...state.targetGroupTwo, ...temp }
                     break
                 default:
                     throw 'id variable must be a 1 or a 2 to match the target group!'
