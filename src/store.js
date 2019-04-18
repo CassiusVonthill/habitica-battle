@@ -15,16 +15,27 @@ export default new Vuex.Store({
         },
         targetChallenge: {
             name: '',
-            members: []
+            id: '',
+            memberCount: null,
+            members: [],
+            tasks: {
+                todos: [],
+                dailys: [],
+                habits: []
+            }
         },
         targetGroupOne: {
             name: '',
+            id: '',
             avg: 0,
+            memberCount: null,
             members: []
         },
         targetGroupTwo: {
             name: '',
+            id: '',
             avg: 0,
+            memberCount: null,
             members: []
         },
         authenticated: false
@@ -38,6 +49,29 @@ export default new Vuex.Store({
         },
         setAuthenticated(state, val) {
             state.authenticated = val
+        },
+        addChallengeData(state, challengeData) {
+            state.targetChallenge.name = challengeData.name
+            state.targetChallenge.memberCount = challengeData.memberCount
+            state.targetChallenge.tasks.todos = challengeData.tasksOrder.todos
+            state.targetChallenge.tasks.dailys = challengeData.tasksOrder.dailys
+            state.targetChallenge.tasks.habits = challengeData.tasksOrder.habits
+        },
+        addGroupData(state, { groupData, id }) {
+            let temp = {
+                name: groupData.name,
+                memberCount: groupData.memberCount
+            }
+            switch (id) {
+                case 1:
+                    state.targetGroupOne = temp
+                    break
+                case 2:
+                    state.targetGroupTwo = temp
+                    break
+                default:
+                    throw 'id variable must be a 1 or a 2 to match the target group!'
+            }
         }
     },
     actions: {
@@ -57,24 +91,62 @@ export default new Vuex.Store({
                     })
             })
         },
+        getChallenge(context, challengeID) {
+            api.get('/challenges' + challengeID)
+                .then(res => {
+                    context.commit('addChallengeData', {
+                        challengeData: res.data
+                    })
+                })
+                .catch(err => {
+                    throw err
+                })
+        },
+        getGroup(context, { groupID, id }) {
+            api.get('/groups/' + groupID)
+                .then(res => {
+                    context.commit('addGroupData', {
+                        groupData: res.data,
+                        id: id
+                    })
+                })
+                .catch(err => {
+                    throw err
+                })
+        },
         // Assumes that all data for the target params has been previously gathered
         battle(context, { targetGroupOne, targetGroupTwo, targetChallenge }) {
-            let getMembersInChallenge = groupMembers =>
-                groupMembers.filter(member => targetChallenge.has(member))
+            context.dispatch('getChallenge', {
+                challengeID: targetChallenge
+            })
 
-            let [gOneChallengeMembers, gTwoChallengeMembers] = [
+            context.dispatch('getGroup', {
+                groupID: targetGroupOne,
+                id: 1
+            })
+
+            context.dispatch('getGroup', {
+                groupID: targetGroupTwo,
+                id: 2
+            })
+
+            let [groupOneChallengeMembers, groupTwoChallengeMembers] = [
                 (targetGroupOne, targetGroupTwo)
-            ].map(group => getMembersInChallenge(group.members))
-
-            let intersectionMembers = gOneChallengeMembers.filter(member =>
-                gTwoChallengeMembers.has(member)
+            ].map(group =>
+                group.members.filter(member =>
+                    context.state.targetChallenge.members.has(member)
+                )
             )
 
-            let uniqueGroupOneMembers = gOneChallengeMembers.filter(
+            let intersectionMembers = groupOneChallengeMembers.filter(member =>
+                groupTwoChallengeMembers.has(member)
+            )
+
+            let uniqueGroupOneMembers = groupOneChallengeMembers.filter(
                 member => !intersectionMembers.has(member)
             )
 
-            let uniqueGroupTwoMembers = gTwoChallengeMembers.filter(
+            let uniqueGroupTwoMembers = groupTwoChallengeMembers.filter(
                 member => !intersectionMembers.has(member)
             )
         }
