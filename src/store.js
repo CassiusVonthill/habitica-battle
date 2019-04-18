@@ -122,16 +122,17 @@ export default new Vuex.Store({
         },
         async battle(
             context,
-            { targetGroupOne, targetGroupTwo, targetChallenge }
+            { targetGroupOneId, targetGroupTwoId, targetChallengeId }
         ) {
             // Grab the data if needed
-            context.dispatch('getChallenge', { challengeID: targetChallenge })
-            context.dispatch('getGroup', { groupID: targetGroupOne, id: 1 })
-            context.dispatch('getGroup', { groupID: targetGroupTwo, id: 2 })
+            context.dispatch('getChallenge', { challengeID: targetChallengeId })
+            context.dispatch('getGroup', { groupID: targetGroupOneId, id: 1 })
+            context.dispatch('getGroup', { groupID: targetGroupTwoId, id: 2 })
 
             // Filters out the members in each group that are in the challenge
             let [groupOneChallengeMembers, groupTwoChallengeMembers] = [
-                (targetGroupOne, targetGroupTwo)
+                context.state.targetGroupOne,
+                context.state.targetGroupTwo
             ].map(group =>
                 group.members.filter(member =>
                     context.state.targetChallenge.members.has(member)
