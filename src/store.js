@@ -92,44 +92,44 @@ export default new Vuex.Store({
             })
         },
         getChallenge(context, challengeID) {
-            api.get('/challenges' + challengeID)
-                .then(res => {
-                    context.commit('addChallengeData', {
-                        challengeData: res.data
-                    })
+            api.get('/challenges' + challengeID).then(res => {
+                context.commit('addChallengeData', {
+                    challengeData: res.data
                 })
-                .catch(err => {
-                    throw err
-                })
+            })
         },
         getGroup(context, { groupID, id }) {
-            api.get('/groups/' + groupID)
-                .then(res => {
-                    context.commit('addGroupData', {
-                        groupData: res.data,
-                        id: id
-                    })
+            api.get('/groups/' + groupID).then(res => {
+                context.commit('addGroupData', {
+                    groupData: res.data,
+                    id: id
                 })
-                .catch(err => {
-                    throw err
-                })
+            })
         },
-        // Assumes that all data for the target params has been previously gathered
-        battle(context, { targetGroupOne, targetGroupTwo, targetChallenge }) {
-            context.dispatch('getChallenge', {
-                challengeID: targetChallenge
+        getMemberCompletion(state, { member }) {
+            api.get(
+                `/challenges/${state.targetChallenge}/members/${member}`
+            ).then(res => {
+                // TODO: grab and sum all the completions from the object
+                res.data
             })
+        },
+        async getAverageCompletion(dispatch, { members }) {
+            let completions = await Promise.all(
+                members.map(m => dispatch('getMemberCompletion', { member: m }))
+            )
+            return completions.reduce((acc, x) => acc + x) / completions.length
+        },
+        async battle(
+            context,
+            { targetGroupOne, targetGroupTwo, targetChallenge }
+        ) {
+            // Grab the data if needed
+            context.dispatch('getChallenge', { challengeID: targetChallenge })
+            context.dispatch('getGroup', { groupID: targetGroupOne, id: 1 })
+            context.dispatch('getGroup', { groupID: targetGroupTwo, id: 2 })
 
-            context.dispatch('getGroup', {
-                groupID: targetGroupOne,
-                id: 1
-            })
-
-            context.dispatch('getGroup', {
-                groupID: targetGroupTwo,
-                id: 2
-            })
-
+            // Filters out the members in each group that are in the challenge
             let [groupOneChallengeMembers, groupTwoChallengeMembers] = [
                 (targetGroupOne, targetGroupTwo)
             ].map(group =>
@@ -138,16 +138,22 @@ export default new Vuex.Store({
                 )
             )
 
+            // Basic set operations for oganization
             let intersectionMembers = groupOneChallengeMembers.filter(member =>
                 groupTwoChallengeMembers.has(member)
             )
-
             let uniqueGroupOneMembers = groupOneChallengeMembers.filter(
                 member => !intersectionMembers.has(member)
             )
-
             let uniqueGroupTwoMembers = groupTwoChallengeMembers.filter(
                 member => !intersectionMembers.has(member)
+            )
+
+            // Grab the completion status of each unique member in each group
+            let [avgOne, avgTwo] = await Promise.all(
+                [uniqueGroupOneMembers, uniqueGroupTwoMembers].map(x =>
+                    context.dispatch('getAverageCompletion', { members: x })
+                )
             )
         }
     },
