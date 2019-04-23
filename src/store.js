@@ -92,23 +92,25 @@ export default new Vuex.Store({
             })
         },
         getChallenge(context, challengeID) {
-            api.get('/challenges' + challengeID).then(res => {
-                context.commit('addChallengeData', {
-                    challengeData: res.data
+            if (context.state.targetChallenge.id != challengeID) {
+                api.get(`/challenges/${challengeID}`).then(res => {
+                    context.commit('addChallengeData', {
+                        challengeData: res.data
+                    })
                 })
-            })
+            }
         },
         getGroup(context, { groupID, id }) {
-            api.get('/groups/' + groupID).then(res => {
+            api.get(`/groups/${groupID}`).then(res => {
                 context.commit('addGroupData', {
                     groupData: res.data,
                     id: id
                 })
             })
         },
-        getMemberCompletion(state, { member }) {
+        getMemberCompletion(state, { memberId }) {
             api.get(
-                `/challenges/${state.targetChallenge}/members/${member}`
+                `/challenges/${state.targetChallenge}/members/${memberId}`
             ).then(res => {
                 // TODO: grab and sum all the completions from the object
                 res.data
@@ -118,16 +120,18 @@ export default new Vuex.Store({
             let completions = await Promise.all(
                 members.map(m => dispatch('getMemberCompletion', { member: m }))
             )
-            return completions.reduce((acc, x) => acc + x) / completions.length
+            return completions.reduce((acc, x) => acc + x, 0) / completions.length
         },
         async battle(
             context,
             { targetGroupOneId, targetGroupTwoId, targetChallengeId }
         ) {
+            console.log("In battle")
             // Grab the data if needed
             context.dispatch('getChallenge', { challengeID: targetChallengeId })
             context.dispatch('getGroup', { groupID: targetGroupOneId, id: 1 })
             context.dispatch('getGroup', { groupID: targetGroupTwoId, id: 2 })
+            console.log("after dispatch")
 
             // Filters out the members in each group that are in the challenge
             let [groupOneChallengeMembers, groupTwoChallengeMembers] = [

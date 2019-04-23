@@ -75,7 +75,12 @@ export default {
                 this.selectedGroupOne !== '' &&
                 this.selectedGroupTwo !== ''
             ) {
-                console.log('Battling!')
+                console.log('Button has been clicked')
+                this.$store.dispatch('battle', {
+                    targetGroupOneId: this.selectedGroupOne,
+                    targetGroupTwoId: this.selectedGroupTwo,
+                    targetChallengeId: this.selectedChallenge
+                })
             }
         }
     }
