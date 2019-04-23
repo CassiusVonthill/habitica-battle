@@ -164,5 +164,7 @@ export default new Vuex.Store({
             )
         }
     },
-    getters: {}
+    getters: {
+        isAuthenticated: state => state.authenticated
+    }
 })
