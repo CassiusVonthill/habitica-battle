@@ -24,20 +24,22 @@ export default new Vuex.Store({
                 habits: []
             }
         },
-        targetGroupOne: {
-            name: '',
-            id: '',
-            avg: 0,
-            memberCount: null,
-            members: []
-        },
-        targetGroupTwo: {
-            name: '',
-            id: '',
-            avg: 0,
-            memberCount: null,
-            members: []
-        },
+        targetGroups: [
+            {
+                name: '',
+                id: '',
+                avg: 0,
+                memberCount: null,
+                members: []
+            },
+            {
+                name: '',
+                id: '',
+                avg: 0,
+                memberCount: null,
+                members: []
+            }
+        ],
         authenticated: false
     },
     mutations: {
@@ -62,16 +64,10 @@ export default new Vuex.Store({
                 name: groupData.name,
                 memberCount: groupData.memberCount
             }
-            switch (id) {
-                case 1:
-                    state.targetGroupOne = { ...state.targetGroupOne, ...temp }
-                    break
-                case 2:
-                    state.targetGroupTwo = { ...state.targetGroupTwo, ...temp }
-                    break
-                default:
-                    throw 'id variable must be a 1 or a 2 to match the target group!'
-            }
+            state.targetGroups[id] = { ...state.targetGroupOne, ...temp }
+        },
+        setGroupAvg(state, { val, id }) {
+            state.targetGroups[id] = val
         }
     },
     actions: {
@@ -113,52 +109,58 @@ export default new Vuex.Store({
                 `/challenges/${state.targetChallenge}/members/${memberId}`
             ).then(res => {
                 // TODO: grab and sum all the completions from the object
-                res.data
+                let completedTasks = res.data.tasks.filter(
+                    task => task.completed
+                )
+
+                return completedTasks.length()
             })
         },
         async getAverageCompletion(dispatch, { members }) {
             let completions = await Promise.all(
                 members.map(m => dispatch('getMemberCompletion', { member: m }))
             )
-            return completions.reduce((acc, x) => acc + x, 0) / completions.length
+            return (
+                completions.reduce((acc, x) => acc + x, 0) / completions.length
+            )
         },
         async battle(
             context,
             { targetGroupOneId, targetGroupTwoId, targetChallengeId }
         ) {
-            console.log("In battle")
-            // Grab the data if needed
+            console.log('In battle')
+            // Make sure we have the correct data and deal with it
             context.dispatch('getChallenge', { challengeID: targetChallengeId })
-            context.dispatch('getGroup', { groupID: targetGroupOneId, id: 1 })
-            context.dispatch('getGroup', { groupID: targetGroupTwoId, id: 2 })
-            console.log("after dispatch")
+            context.dispatch('getGroup', { groupID: targetGroupOneId, id: 0 })
+            context.dispatch('getGroup', { groupID: targetGroupTwoId, id: 1 })
+            console.log('after dispatch')
 
-            // Filters out the members in each group that are in the challenge
-            let [groupOneChallengeMembers, groupTwoChallengeMembers] = [
-                context.state.targetGroupOne,
-                context.state.targetGroupTwo
-            ].map(group =>
+            // Get members in each group that are in the challenge
+            let groupChallengeMembers = context.state.targetGroups.map(group =>
                 group.members.filter(member =>
                     context.state.targetChallenge.members.has(member)
                 )
             )
-
-            // Basic set operations for oganization
-            let intersectionMembers = groupOneChallengeMembers.filter(member =>
-                groupTwoChallengeMembers.has(member)
+            // Intersection group members
+            let intersectionMembers = groupChallengeMembers[0].filter(member =>
+                groupChallengeMembers[1].has(member)
             )
-            let uniqueGroupOneMembers = groupOneChallengeMembers.filter(
-                member => !intersectionMembers.has(member)
+            //  Symettric difference group members
+            let uniqueGroupMembers = groupChallengeMembers.map(group =>
+                group.members.filter(member => !intersectionMembers.has(member))
             )
-            let uniqueGroupTwoMembers = groupTwoChallengeMembers.filter(
-                member => !intersectionMembers.has(member)
-            )
-
             // Grab the completion status of each unique member in each group
-            let [avgOne, avgTwo] = await Promise.all(
-                [uniqueGroupOneMembers, uniqueGroupTwoMembers].map(x =>
-                    context.dispatch('getAverageCompletion', { members: x })
+            // average the group
+            let averages = await Promise.all(
+                uniqueGroupMembers.map(group =>
+                    context.dispatch('getAverageCompletion', {
+                        members: group.members
+                    })
                 )
+            )
+
+            averages.forEach((val, index) =>
+                context.commit('setGroupAvg', { val: val, id: index })
             )
         }
     },
