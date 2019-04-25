@@ -69,17 +69,15 @@ export default {
                         apiToken: this.apiToken
                     })
                     .then(res => {
-                        this.alert = {
-                            type: 'success',
-                            msg: res
-                        }
+                        this.alert = { type: 'success', msg: res }
+                    })
+                    .then(() => {
+                        this.$router.push({ name: 'dashboard' })
                     })
                     .catch(err => {
                         this.alert = { type: 'error', msg: err }
                     })
                 this.isLoading = false
-
-                this.$router.push({ name: 'dashboard' })
             }
         }
     }
