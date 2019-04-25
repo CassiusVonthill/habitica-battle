@@ -17,11 +17,15 @@
 
 <script>
 import ChallengeForm from '@/components/ChallengeForm'
+import { mapState } from 'vuex'
 
 export default {
     name: 'Dashboard',
     components: {
         ChallengeForm
+    },
+    computed: {
+        ...mapState(['targetChallenge', 'targetGroups'])
     }
 }
 </script>
