@@ -59,12 +59,15 @@ export default new Vuex.Store({
             state.targetChallenge.tasks.dailys = challengeData.tasksOrder.dailys
             state.targetChallenge.tasks.habits = challengeData.tasksOrder.habits
         },
-        addGroupData(state, { groupData, id }) {
+        addGroupData(state, { groupData, index }) {
             let temp = {
                 name: groupData.name,
                 memberCount: groupData.memberCount
             }
-            state.targetGroups[id] = { ...state.targetGroupOne, ...temp }
+            state.targetGroups[index] = {
+                ...state.targetGroups[index],
+                ...temp
+            }
         },
         setGroupAvg(state, { val, id }) {
             state.targetGroups[id] = val
