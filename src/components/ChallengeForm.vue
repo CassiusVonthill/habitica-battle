@@ -68,7 +68,10 @@ export default {
             groupOptions: this.$store.state.user.groups,
             authRules: [
                 v => !!v || 'Field is required',
-                v => (v && v.length == 36) || 'Field must be 36 characters',
+                v =>
+                    (v && v.length == 36) ||
+                    v === 'party' ||
+                    'Field must be 36 characters',
                 v =>
                     !RegExp('[^A-Za-z0-9-]').test(v) ||
                     'Field can only contain alphanumeric and dash (-) characters'
@@ -77,7 +80,7 @@ export default {
     },
 
     methods: {
-        battle() {
+        async battle() {
             if (
                 this.$refs.challengeForm.validate() &&
                 this.selectedChallenge !== '' &&
@@ -86,13 +89,15 @@ export default {
                 this.selectedGroupOne !== this.selectedGroupTwo
             ) {
                 console.log('Entering battle')
-                this.$store
-                    .dispatch('battle', {
-                        targetGroupOneId: this.selectedGroupOne,
-                        targetGroupTwoId: this.selectedGroupTwo,
-                        targetChallengeId: this.selectedChallenge
-                    })
+                this.valid = false
+                await this.$store
+                    .dispatch('battle', [
+                        this.selectedGroupOne,
+                        this.selectedGroupTwo,
+                        this.selectedChallenge
+                    ])
                     .catch(err => (this.alert = { type: 'error', msg: err }))
+                this.valid = true
             } else {
                 // alert that something is wrong with form inputs
                 this.alert = {

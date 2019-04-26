@@ -74,11 +74,18 @@ export default new Vuex.Store({
             state.targetGroups[id] = val
         },
         appendGroupMembers(state, { index, members }) {
-            console.log(members)
-            state.targetGroups[index].members.concat(members)
+            state.targetGroups[index].members.push(members)
         },
         appendChallengeMembers(state, members) {
-            state.targetChallenge.members.concat(members)
+            state.targetChallenge.members.push(members)
+        },
+        flattenGroupMembers(state, index) {
+            state.targetGroups[index].members = state.targetGroups[
+                index
+            ].members.flat()
+        },
+        flattenChallengeMembers(state) {
+            state.targetChallenge.members = state.targetChallenge.members.flat()
         }
     },
     actions: {
