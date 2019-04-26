@@ -61,7 +61,7 @@ export default new Vuex.Store({
         },
         addGroupData(state, { groupData, index }) {
             let temp = {
-                id: groupData.id,
+                // id: groupData.id,
                 name: groupData.name,
                 memberCount: groupData.memberCount
             }
@@ -105,49 +105,56 @@ export default new Vuex.Store({
                     })
             })
         },
-        getChallenge({ commit, state }, challengeID) {
+        async getChallenge({ commit, state }, challengeID) {
             if (state.targetChallenge.id != challengeID) {
-                api.get(`/challenges/${challengeID}`).then(res =>
-                    commit('addChallengeData', res.data)
+                let challengeDataResponse = await api.get(
+                    `/challenges/${challengeID}`
                 )
+                commit('addChallengeData', challengeDataResponse.data)
 
                 let newMemberIDs = []
                 let lastId = ''
                 do {
-                    api.get(
+                    let challengeMemberResponse = await api.get(
                         `/challenges/${challengeID}/members` +
-                            (lastId != '' ? `?lastId = ${lastId}` : '')
-                    ).then(res => {
-                        newMemberIDs = res.data.map(member => member.id)
-                        commit('appendChallengeMembers', newMemberIDs)
-                        lastId = newMemberIDs[-1]
-                    })
+                            (lastId != '' ? `?lastId=${lastId}` : '')
+                    )
+                    newMemberIDs = challengeMemberResponse.data.map(
+                        member => member.id
+                    )
+                    commit('appendChallengeMembers', newMemberIDs)
+                    lastId = newMemberIDs[newMemberIDs - 1]
                 } while (newMemberIDs.length == 30)
+                commit('flattenChallengeMembers')
             }
         },
-        getGroup(context, { groupID, index }) {
-            api.get(`/groups/${groupID}`).then(res =>
-                context.commit('addGroupData', {
-                    groupData: res.data,
+        async getGroup({ commit, state }, { groupID, index }) {
+            if (state.targetGroups[index].id != groupID) {
+                // Cleanup previous information
+                state.targetGroups[index].members = []
+
+                let groupDataResponse = await api.get(`/groups/${groupID}`)
+                commit('addGroupData', {
+                    groupData: groupDataResponse.data,
                     index: index
                 })
-            )
 
-            let newMemberIDs = []
-            let lastId = ''
-            do {
-                api.get(
-                    `/groups/${groupID}/members` +
-                        (lastId != '' ? `?lastId = ${lastId}` : '')
-                ).then(res => {
-                    newMemberIDs = res.data.map(member => member.id)
-                    context.commit('appendGroupMembers', {
+                let newMemberIDs = []
+                let lastId = ''
+                do {
+                    let memberResponse = await api.get(
+                        `/groups/${groupID}/members` +
+                            (lastId != '' ? `?lastId=${lastId}` : '')
+                    )
+                    newMemberIDs = memberResponse.data.map(member => member.id)
+                    commit('appendGroupMembers', {
                         index: index,
                         members: newMemberIDs
                     })
-                    lastId = newMemberIDs[-1]
-                })
-            } while (newMemberIDs.length == 30)
+                    lastId = newMemberIDs[newMemberIDs.length - 1]
+                } while (newMemberIDs.length == 30)
+                commit('flattenGroupMembers', index)
+            }
         },
         async getAverageCompletion(state, { members }) {
             let completions = await Promise.all(
@@ -172,7 +179,7 @@ export default new Vuex.Store({
         },
         async battle(
             context,
-            { targetGroupOneId, targetGroupTwoId, targetChallengeId }
+            [targetGroupOneId, targetGroupTwoId, targetChallengeId]
         ) {
             console.log('In battle')
             // Make sure we have the correct data and deal with it
