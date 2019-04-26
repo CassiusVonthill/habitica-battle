@@ -119,9 +119,22 @@ export default new Vuex.Store({
                 return completedTasks.length()
             })
         },
-        async getAverageCompletion(dispatch, { members }) {
+        async getAverageCompletion(state, { members }) {
             let completions = await Promise.all(
-                members.map(m => dispatch('getMemberCompletion', { member: m }))
+                members.map(memberId => {
+                    api.get(
+                        `/challenges/${
+                            state.targetChallenge
+                        }/members/${memberId}`
+                    ).then(res => {
+                        // TODO: grab and sum all the completions from the object
+                        let completedTasks = res.data.tasks.filter(
+                            task => task.completed
+                        )
+
+                        return completedTasks.length()
+                    })
+                })
             )
             return (
                 completions.reduce((acc, x) => acc + x, 0) / completions.length
