@@ -61,6 +61,7 @@ export default new Vuex.Store({
         },
         addGroupData(state, { groupData, index }) {
             let temp = {
+                id: groupData.id,
                 name: groupData.name,
                 memberCount: groupData.memberCount
             }
@@ -71,6 +72,13 @@ export default new Vuex.Store({
         },
         setGroupAvg(state, { val, id }) {
             state.targetGroups[id] = val
+        },
+        appendGroupMembers(state, { index, members }) {
+            console.log(members)
+            state.targetGroups[index].members.concat(members)
+        },
+        appendChallengeMembers(state, members) {
+            state.targetChallenge.members.concat(members)
         }
     },
     actions: {
@@ -90,34 +98,49 @@ export default new Vuex.Store({
                     })
             })
         },
-        getChallenge(context, challengeID) {
-            if (context.state.targetChallenge.id != challengeID) {
-                api.get(`/challenges/${challengeID}`).then(res => {
-                    context.commit('addChallengeData', {
-                        challengeData: res.data
-                    })
-                })
-            }
-        },
-        getGroup(context, { groupID, id }) {
-            api.get(`/groups/${groupID}`).then(res => {
-                context.commit('addGroupData', {
-                    groupData: res.data,
-                    id: id
-                })
-            })
-        },
-        getMemberCompletion(state, { memberId }) {
-            api.get(
-                `/challenges/${state.targetChallenge}/members/${memberId}`
-            ).then(res => {
-                // TODO: grab and sum all the completions from the object
-                let completedTasks = res.data.tasks.filter(
-                    task => task.completed
+        getChallenge({ commit, state }, challengeID) {
+            if (state.targetChallenge.id != challengeID) {
+                api.get(`/challenges/${challengeID}`).then(res =>
+                    commit('addChallengeData', res.data)
                 )
 
-                return completedTasks.length()
-            })
+                let newMemberIDs = []
+                let lastId = ''
+                do {
+                    api.get(
+                        `/challenges/${challengeID}/members` +
+                            (lastId != '' ? `?lastId = ${lastId}` : '')
+                    ).then(res => {
+                        newMemberIDs = res.data.map(member => member.id)
+                        commit('appendChallengeMembers', newMemberIDs)
+                        lastId = newMemberIDs[-1]
+                    })
+                } while (newMemberIDs.length == 30)
+            }
+        },
+        getGroup(context, { groupID, index }) {
+            api.get(`/groups/${groupID}`).then(res =>
+                context.commit('addGroupData', {
+                    groupData: res.data,
+                    index: index
+                })
+            )
+
+            let newMemberIDs = []
+            let lastId = ''
+            do {
+                api.get(
+                    `/groups/${groupID}/members` +
+                        (lastId != '' ? `?lastId = ${lastId}` : '')
+                ).then(res => {
+                    newMemberIDs = res.data.map(member => member.id)
+                    context.commit('appendGroupMembers', {
+                        index: index,
+                        members: newMemberIDs
+                    })
+                    lastId = newMemberIDs[-1]
+                })
+            } while (newMemberIDs.length == 30)
         },
         async getAverageCompletion(state, { members }) {
             let completions = await Promise.all(
@@ -146,9 +169,18 @@ export default new Vuex.Store({
         ) {
             console.log('In battle')
             // Make sure we have the correct data and deal with it
-            context.dispatch('getChallenge', { challengeID: targetChallengeId })
-            context.dispatch('getGroup', { groupID: targetGroupOneId, id: 0 })
-            context.dispatch('getGroup', { groupID: targetGroupTwoId, id: 1 })
+            // Fail fast because we need all the information for it to work
+            await Promise.all(
+                context.dispatch('getChallenge', targetChallengeId),
+                context.dispatch('getGroup', {
+                    groupID: targetGroupOneId,
+                    index: 0
+                }),
+                context.dispatch('getGroup', {
+                    groupID: targetGroupTwoId,
+                    index: 1
+                })
+            )
             console.log('after dispatch')
 
             // Get members in each group that are in the challenge
