@@ -1,46 +1,53 @@
 <template>
-  <v-form lazy-validation v-model="valid" ref="challengeForm">
-    <v-layout row wrap align-center justify-space-between>
-      <v-flex xs12 md3>
-        <v-combobox
-          v-model="selectedChallenge"
-          :items="challengeOptions"
-          label="Select the Challenge"
-          :counter="36"
-          :rules="authRules"
-          dense
-        ></v-combobox>
-      </v-flex>
-      <v-flex xs12 md3>
-        <v-combobox
-          v-model="selectedGroupOne"
-          :items="groupOptions"
-          label="Select the first group"
-          :counter="36"
-          :rules="authRules"
-          dense
-        ></v-combobox>
-      </v-flex>
-      <v-flex xs12 md3>
-        <v-combobox
-          v-model="selectedGroupTwo"
-          :items="groupOptions"
-          label="Select the second group"
-          :counter="36"
-          :rules="authRules"
-          dense
-        ></v-combobox>
-      </v-flex>
+  <div>
+    <v-alert v-if="alert.type" :value="alert.msg" :type="alert.type">
+      {{
+      alert.msg
+      }}
+    </v-alert>
+    <v-form lazy-validation v-model="valid" ref="challengeForm">
+      <v-layout row wrap align-center justify-space-between>
+        <v-flex xs12 md3>
+          <v-combobox
+            v-model="selectedChallenge"
+            :items="challengeOptions"
+            label="Select the Challenge"
+            :counter="36"
+            :rules="authRules"
+            dense
+          ></v-combobox>
+        </v-flex>
+        <v-flex xs12 md3>
+          <v-combobox
+            v-model="selectedGroupOne"
+            :items="groupOptions"
+            label="Select the first group"
+            :counter="36"
+            :rules="authRules"
+            dense
+          ></v-combobox>
+        </v-flex>
+        <v-flex xs12 md3>
+          <v-combobox
+            v-model="selectedGroupTwo"
+            :items="groupOptions"
+            label="Select the second group"
+            :counter="36"
+            :rules="authRules"
+            dense
+          ></v-combobox>
+        </v-flex>
 
-      <v-flex xs12 md3>
-        <v-layout justify-center>
-          <v-flex>
-            <v-btn :disabled="!valid" color="purple" @click="battle">Battle!</v-btn>
-          </v-flex>
-        </v-layout>
-      </v-flex>
-    </v-layout>
-  </v-form>
+        <v-flex xs12 md3>
+          <v-layout justify-center>
+            <v-flex>
+              <v-btn :disabled="!valid" color="purple" @click="battle">Battle!</v-btn>
+            </v-flex>
+          </v-layout>
+        </v-flex>
+      </v-layout>
+    </v-form>
+  </div>
 </template>
 
 <script>
@@ -49,6 +56,10 @@ export default {
 
     data() {
         return {
+            alert: {
+                type: '',
+                msg: ''
+            },
             valid: true,
             selectedChallenge: '',
             selectedGroupOne: '',
@@ -75,13 +86,20 @@ export default {
                 this.selectedGroupOne !== this.selectedGroupTwo
             ) {
                 console.log('Entering battle')
-                this.$store.dispatch('battle', {
-                    targetGroupOneId: this.selectedGroupOne,
-                    targetGroupTwoId: this.selectedGroupTwo,
-                    targetChallengeId: this.selectedChallenge
-                })
+                this.$store
+                    .dispatch('battle', {
+                        targetGroupOneId: this.selectedGroupOne,
+                        targetGroupTwoId: this.selectedGroupTwo,
+                        targetChallengeId: this.selectedChallenge
+                    })
+                    .catch(err => (this.alert = { type: 'error', msg: err }))
             } else {
                 // alert that something is wrong with form inputs
+                this.alert = {
+                    type: 'error',
+                    msg:
+                        'Generic Error: Make sure your groups are different and fields are not empty'
+                }
             }
         }
     }
