@@ -1,53 +1,56 @@
 <template>
-  <div>
-    <v-alert v-if="alert.type" :value="alert.msg" :type="alert.type">
-      {{
-      alert.msg
-      }}
-    </v-alert>
-    <v-form lazy-validation v-model="valid" ref="challengeForm">
-      <v-layout row wrap align-center justify-space-between>
-        <v-flex xs12 md3>
-          <v-combobox
-            v-model="selectedChallenge"
-            :items="challengeOptions"
-            label="Select the Challenge"
-            :counter="36"
-            :rules="authRules"
-            dense
-          ></v-combobox>
-        </v-flex>
-        <v-flex xs12 md3>
-          <v-combobox
-            v-model="selectedGroupOne"
-            :items="groupOptions"
-            label="Select the first group"
-            :counter="36"
-            :rules="authRules"
-            dense
-          ></v-combobox>
-        </v-flex>
-        <v-flex xs12 md3>
-          <v-combobox
-            v-model="selectedGroupTwo"
-            :items="groupOptions"
-            label="Select the second group"
-            :counter="36"
-            :rules="authRules"
-            dense
-          ></v-combobox>
-        </v-flex>
+    <div>
+        <v-alert v-if="alert.type" :value="alert.msg" :type="alert.type">
+            {{ alert.msg }}
+        </v-alert>
+        <v-form lazy-validation v-model="valid" ref="challengeForm">
+            <v-layout row wrap align-center justify-space-between>
+                <v-flex xs12 md3>
+                    <v-combobox
+                        v-model="selectedChallenge"
+                        :items="challengeOptions"
+                        label="Select the Challenge"
+                        :counter="36"
+                        :rules="authRules"
+                        dense
+                    ></v-combobox>
+                </v-flex>
+                <v-flex xs12 md3>
+                    <v-combobox
+                        v-model="selectedGroupOne"
+                        :items="groupOptions"
+                        label="Select the first group"
+                        :counter="36"
+                        :rules="authRules"
+                        dense
+                    ></v-combobox>
+                </v-flex>
+                <v-flex xs12 md3>
+                    <v-combobox
+                        v-model="selectedGroupTwo"
+                        :items="groupOptions"
+                        label="Select the second group"
+                        :counter="36"
+                        :rules="authRules"
+                        dense
+                    ></v-combobox>
+                </v-flex>
 
-        <v-flex xs12 md3>
-          <v-layout justify-center>
-            <v-flex>
-              <v-btn :disabled="!valid" color="purple" @click="battle">Battle!</v-btn>
-            </v-flex>
-          </v-layout>
-        </v-flex>
-      </v-layout>
-    </v-form>
-  </div>
+                <v-flex xs12 md3>
+                    <v-layout justify-center>
+                        <v-flex>
+                            <v-btn
+                                :disabled="!valid"
+                                color="purple"
+                                @click="battle"
+                                >Battle!</v-btn
+                            >
+                        </v-flex>
+                    </v-layout>
+                </v-flex>
+            </v-layout>
+        </v-form>
+    </div>
 </template>
 
 <script>
