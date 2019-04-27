@@ -53,6 +53,7 @@ export default new Vuex.Store({
             state.authenticated = val
         },
         addChallengeData(state, challengeData) {
+            // TODO: grab ID
             state.targetChallenge.name = challengeData.name
             state.targetChallenge.memberCount = challengeData.memberCount
             state.targetChallenge.tasks.todos = challengeData.tasksOrder.todos
@@ -61,7 +62,7 @@ export default new Vuex.Store({
         },
         addGroupData(state, { groupData, index }) {
             let temp = {
-                // id: groupData.id,
+                // TODO: grab ID
                 name: groupData.name,
                 memberCount: groupData.memberCount
             }
@@ -70,7 +71,7 @@ export default new Vuex.Store({
                 ...temp
             }
         },
-        setGroupAvg(state, { val, id }) {
+        setGroupAvg(state, [val, id]) {
             state.targetGroups[id] = val
         },
         appendGroupMembers(state, { index, members }) {
@@ -86,6 +87,12 @@ export default new Vuex.Store({
         },
         flattenChallengeMembers(state) {
             state.targetChallenge.members = state.targetChallenge.members.flat()
+        },
+        emptyGroupMembers(state, index) {
+            state.targetGroups[index].members = []
+        },
+        emptyChallengeMembers(state) {
+            state.targetChallenge.members = []
         }
     },
     actions: {
@@ -106,7 +113,11 @@ export default new Vuex.Store({
             })
         },
         async getChallenge({ commit, state }, challengeID) {
+            console.log('Getting Challege')
             if (state.targetChallenge.id != challengeID) {
+                // Cleanup previous information
+                commit('emptyChallengeMembers')
+
                 let challengeDataResponse = await api.get(
                     `/challenges/${challengeID}`
                 )
@@ -115,23 +126,23 @@ export default new Vuex.Store({
                 let newMemberIDs = []
                 let lastId = ''
                 do {
-                    let challengeMemberResponse = await api.get(
+                    let memberResponse = await api.get(
                         `/challenges/${challengeID}/members` +
                             (lastId != '' ? `?lastId=${lastId}` : '')
                     )
-                    newMemberIDs = challengeMemberResponse.data.map(
-                        member => member.id
-                    )
+                    newMemberIDs = memberResponse.data.map(member => member.id)
                     commit('appendChallengeMembers', newMemberIDs)
-                    lastId = newMemberIDs[newMemberIDs - 1]
+                    lastId = newMemberIDs[newMemberIDs.length - 1]
                 } while (newMemberIDs.length == 30)
                 commit('flattenChallengeMembers')
             }
+            console.log('Finished getting challenge')
         },
         async getGroup({ commit, state }, { groupID, index }) {
+            console.log(`Getting group ${index}`)
             if (state.targetGroups[index].id != groupID) {
                 // Cleanup previous information
-                state.targetGroups[index].members = []
+                commit('emptyGroupMembers', index)
 
                 let groupDataResponse = await api.get(`/groups/${groupID}`)
                 commit('addGroupData', {
@@ -155,6 +166,7 @@ export default new Vuex.Store({
                 } while (newMemberIDs.length == 30)
                 commit('flattenGroupMembers', index)
             }
+            console.log(`Finished getting group ${index}`)
         },
         async getAverageCompletion(state, { members }) {
             let completions = await Promise.all(
@@ -178,51 +190,53 @@ export default new Vuex.Store({
             )
         },
         async battle(
-            context,
+            { state, dispatch, commit },
             [targetGroupOneId, targetGroupTwoId, targetChallengeId]
         ) {
             console.log('In battle')
             // Make sure we have the correct data and deal with it
             // Fail fast because we need all the information for it to work
-            await Promise.all(
-                context.dispatch('getChallenge', targetChallengeId),
-                context.dispatch('getGroup', {
+            await Promise.all([
+                dispatch('getChallenge', targetChallengeId),
+                dispatch('getGroup', {
                     groupID: targetGroupOneId,
                     index: 0
                 }),
-                context.dispatch('getGroup', {
+                dispatch('getGroup', {
                     groupID: targetGroupTwoId,
                     index: 1
                 })
-            )
+            ])
             console.log('after dispatch')
 
             // Get members in each group that are in the challenge
-            let groupChallengeMembers = context.state.targetGroups.map(group =>
+            let groupChallengeMembers = state.targetGroups.map(group => {
                 group.members.filter(member =>
-                    context.state.targetChallenge.members.has(member)
+                    state.targetChallenge.members.includes(member)
                 )
-            )
+            })
             // Intersection group members
             let intersectionMembers = groupChallengeMembers[0].filter(member =>
-                groupChallengeMembers[1].has(member)
+                groupChallengeMembers[1].includes(member)
             )
             //  Symettric difference group members
             let uniqueGroupMembers = groupChallengeMembers.map(group =>
-                group.members.filter(member => !intersectionMembers.has(member))
+                group.members.filter(
+                    member => !intersectionMembers.includes(member)
+                )
             )
             // Grab the completion status of each unique member in each group
             // average the group
             let averages = await Promise.all(
                 uniqueGroupMembers.map(group =>
-                    context.dispatch('getAverageCompletion', {
+                    dispatch('getAverageCompletion', {
                         members: group.members
                     })
                 )
             )
 
             averages.forEach((val, index) =>
-                context.commit('setGroupAvg', { val: val, id: index })
+                commit('setGroupAvg', [val, index])
             )
         }
     },
