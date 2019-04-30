@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-var Habitica = require('habitica')
+var Habitica = require.ensure('habitica')
 
 Vue.use(Vuex)
 
@@ -128,19 +128,19 @@ export default new Vuex.Store({
                 do {
                     let memberResponse = await api.get(
                         `/challenges/${challengeID}/members` +
-                            (lastId != '' ? `?lastId=${lastId}` : '')
+                            (lastId !== '' ? `?lastId=${lastId}` : '')
                     )
                     newMemberIDs = memberResponse.data.map(member => member.id)
                     commit('appendChallengeMembers', newMemberIDs)
                     lastId = newMemberIDs[newMemberIDs.length - 1]
-                } while (newMemberIDs.length == 30)
+                } while (newMemberIDs.length === 30)
                 commit('flattenChallengeMembers')
             }
             console.log('Finished getting challenge')
         },
         async getGroup({ commit, state }, { groupID, index }) {
             console.log(`Getting group ${index}`)
-            if (state.targetGroups[index].id != groupID) {
+            if (state.targetGroups[index].id !== groupID) {
                 // Cleanup previous information
                 commit('emptyGroupMembers', index)
 
@@ -155,7 +155,7 @@ export default new Vuex.Store({
                 do {
                     let memberResponse = await api.get(
                         `/groups/${groupID}/members` +
-                            (lastId != '' ? `?lastId=${lastId}` : '')
+                            (lastId !== '' ? `?lastId=${lastId}` : '')
                     )
                     newMemberIDs = memberResponse.data.map(member => member.id)
                     commit('appendGroupMembers', {
@@ -163,12 +163,12 @@ export default new Vuex.Store({
                         members: newMemberIDs
                     })
                     lastId = newMemberIDs[newMemberIDs.length - 1]
-                } while (newMemberIDs.length == 30)
+                } while (newMemberIDs.length === 30)
                 commit('flattenGroupMembers', index)
             }
             console.log(`Finished getting group ${index}`)
         },
-        async getAverageCompletion(state, { members }) {
+        async getAverageCompletion(state, members) {
             let completions = await Promise.all(
                 members.map(memberId => {
                     api.get(
@@ -189,7 +189,7 @@ export default new Vuex.Store({
                 completions.reduce((acc, x) => acc + x, 0) / completions.length
             )
         },
-        async battle(
+        battle: async function(
             { state, dispatch, commit },
             [targetGroupOneId, targetGroupTwoId, targetChallengeId]
         ) {
@@ -206,38 +206,51 @@ export default new Vuex.Store({
                     groupID: targetGroupTwoId,
                     index: 1
                 })
-            ])
+            ]).catch(err => {
+                console.log('Error aggregating data')
+                return Promise.reject(err)
+            })
             console.log('after dispatch')
 
             // Get members in each group that are in the challenge
             let groupChallengeMembers = state.targetGroups.map(group => {
-                group.members.filter(member =>
+                return group.members.filter(member =>
                     state.targetChallenge.members.includes(member)
                 )
             })
+
             // Intersection group members
             let intersectionMembers = groupChallengeMembers[0].filter(member =>
                 groupChallengeMembers[1].includes(member)
             )
-            //  Symettric difference group members
-            let uniqueGroupMembers = groupChallengeMembers.map(group =>
-                group.members.filter(
-                    member => !intersectionMembers.includes(member)
-                )
+            //  Symmetric difference group members
+            let uniqueGroupMembers = groupChallengeMembers.map(members =>
+                members.filter(member => !intersectionMembers.includes(member))
             )
-            // Grab the completion status of each unique member in each group
-            // average the group
-            let averages = await Promise.all(
-                uniqueGroupMembers.map(group =>
-                    dispatch('getAverageCompletion', {
-                        members: group.members
-                    })
+            if (
+                // Future prepping for more than two groups feature?!
+                // Come back next week and find out
+                uniqueGroupMembers.reduce((acc, x) => acc + x.length, 0) === 0
+            ) {
+                console.log('Bad combination')
+                return Promise.reject(
+                    'Bad Combination: No users in challenge and or groups'
                 )
-            )
+            } else {
+                // Grab the completion status of each unique member in each group
+                // average the group
+                let averages = await Promise.all(
+                    uniqueGroupMembers.map(members =>
+                        dispatch('getAverageCompletion', members)
+                    )
+                )
 
-            averages.forEach((val, index) =>
-                commit('setGroupAvg', [val, index])
-            )
+                averages.forEach((val, index) =>
+                    commit('setGroupAvg', [val, index])
+                )
+
+                console.log('Battle computation ended')
+            }
         }
     },
     getters: {
