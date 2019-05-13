@@ -28,14 +28,14 @@ export default new Vuex.Store({
             {
                 name: '',
                 id: '',
-                avg: 0,
+                avg: null,
                 memberCount: null,
                 members: []
             },
             {
                 name: '',
                 id: '',
-                avg: 0,
+                avg: null,
                 memberCount: null,
                 members: []
             }

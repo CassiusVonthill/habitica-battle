@@ -13,6 +13,7 @@
 import LineVisualizer from '@/components/LineVisualizer'
 import BarVisualizer from '@/components/BarVisualizer'
 export default {
+    name: 'Visualizer',
     props: ['mode'],
     components: {
         LineVisualizer,

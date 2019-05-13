@@ -1,9 +1,11 @@
 <template>
-    <div>Heello Bar</div>
+    <div>Hello Bar</div>
 </template>
 
 <script>
-export default {}
+export default {
+    name: 'BarVisualizer'
+}
 </script>
 
 <style lang="scss" scoped></style>
