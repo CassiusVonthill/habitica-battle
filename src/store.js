@@ -17,7 +17,6 @@ export default new Vuex.Store({
             name: '',
             id: '',
             memberCount: null,
-            members: [],
             tasks: {
                 todos: [],
                 dailys: [],
@@ -30,14 +29,14 @@ export default new Vuex.Store({
                 id: '',
                 avg: null,
                 memberCount: null,
-                members: []
+                completionCount: null
             },
             {
                 name: '',
                 id: '',
                 avg: null,
                 memberCount: null,
-                members: []
+                completionCount: null
             }
         ],
         authenticated: false
@@ -74,25 +73,8 @@ export default new Vuex.Store({
         setGroupAvg(state, [val, id]) {
             state.targetGroups[id] = val
         },
-        appendGroupMembers(state, { index, members }) {
-            state.targetGroups[index].members.push(members)
-        },
-        appendChallengeMembers(state, members) {
-            state.targetChallenge.members.push(members)
-        },
-        flattenGroupMembers(state, index) {
-            state.targetGroups[index].members = state.targetGroups[
-                index
-            ].members.flat()
-        },
-        flattenChallengeMembers(state) {
-            state.targetChallenge.members = state.targetChallenge.members.flat()
-        },
-        emptyGroupMembers(state, index) {
-            state.targetGroups[index].members = []
-        },
-        emptyChallengeMembers(state) {
-            state.targetChallenge.members = []
+        setCompletionCount(state, [val, id]) {
+            state.targetGroups[id].completionCount = val
         }
     },
     actions: {
@@ -113,37 +95,19 @@ export default new Vuex.Store({
             })
         },
         async getChallenge({ commit, state }, challengeID) {
-            console.log('Getting Challege')
-            if (state.targetChallenge.id != challengeID) {
-                // Cleanup previous information
-                commit('emptyChallengeMembers')
-
+            console.log('Getting Challenge')
+            // Don't grab information if we have it
+            if (state.targetChallenge.id !== challengeID) {
                 let challengeDataResponse = await api.get(
                     `/challenges/${challengeID}`
                 )
                 commit('addChallengeData', challengeDataResponse.data)
-
-                let newMemberIDs = []
-                let lastId = ''
-                do {
-                    let memberResponse = await api.get(
-                        `/challenges/${challengeID}/members` +
-                            (lastId !== '' ? `?lastId=${lastId}` : '')
-                    )
-                    newMemberIDs = memberResponse.data.map(member => member.id)
-                    commit('appendChallengeMembers', newMemberIDs)
-                    lastId = newMemberIDs[newMemberIDs.length - 1]
-                } while (newMemberIDs.length === 30)
-                commit('flattenChallengeMembers')
             }
             console.log('Finished getting challenge')
         },
         async getGroup({ commit, state }, { groupID, index }) {
             console.log(`Getting group ${index}`)
             if (state.targetGroups[index].id !== groupID) {
-                // Cleanup previous information
-                commit('emptyGroupMembers', index)
-
                 let groupDataResponse = await api.get(`/groups/${groupID}`)
                 commit('addGroupData', {
                     groupData: groupDataResponse.data,
