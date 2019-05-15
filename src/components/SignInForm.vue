@@ -70,8 +70,6 @@ export default {
                     })
                     .then(res => {
                         this.alert = { type: 'success', msg: res }
-                    })
-                    .then(() => {
                         this.$router.push({ name: 'dashboard' })
                     })
                     .catch(err => {

@@ -15,13 +15,7 @@ export default new Vuex.Store({
         },
         targetChallenge: {
             name: '',
-            id: '',
-            memberCount: null,
-            tasks: {
-                todos: [],
-                dailys: [],
-                habits: []
-            }
+            id: ''
         },
         targetGroups: [
             {
@@ -131,15 +125,19 @@ export default new Vuex.Store({
                     )
                     let memberCompletions = await Promise.all(
                         newMemberIDs.map(memberId =>
-                            api.get(
-                                `/challenges/${challengeId}/members/${memberId}`
-                            )
+                            api
+                                .get(
+                                    `/challenges/${challengeId}/members/${memberId}`
+                                )
+                                .catch(() => null)
                         )
                     )
-                    let memberCompletionCounts = memberCompletions.map(
-                        res =>
-                            res.data.tasks.filter(task => task.completed).length
-                    )
+                    let memberCompletionCounts = memberCompletions.map(res => {
+                        return res !== null
+                            ? res.data.tasks.filter(task => task.completed)
+                                  .length
+                            : 0
+                    })
                     completionCount += memberCompletionCounts.reduce(
                         (acc, x) => acc + x
                     )
