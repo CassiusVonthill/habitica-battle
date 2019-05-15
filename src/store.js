@@ -77,9 +77,10 @@ export default new Vuex.Store({
             state.targetGroups[id].completionCount = val
         },
         setGroupCompletionAvgs(state) {
-            state.targetGroups.forEach(
-                group => (group.avg = group.completionCount / group.memberCount)
-            )
+            state.targetGroups = state.targetGroups.map(group => {
+                group.avg = group.completionCount / group.memberCount
+                return group
+            })
         }
     },
     actions: {
