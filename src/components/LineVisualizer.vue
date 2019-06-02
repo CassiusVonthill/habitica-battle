@@ -1,5 +1,9 @@
 <template>
-    <div>Hello Line</div>
+    <div>
+        <div>Hello Line</div>
+        <div>Group 1 Avg: {{ groupOneAvg }}</div>
+        <div>Group 2 Avg: {{ groupTwoAvg }}</div>
+    </div>
 </template>
 
 <script>

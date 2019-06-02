@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-var Habitica = require.ensure('habitica')
+var Habitica = require('habitica')
 
 Vue.use(Vuex)
 
@@ -15,14 +15,7 @@ export default new Vuex.Store({
         },
         targetChallenge: {
             name: '',
-            id: '',
-            memberCount: null,
-            members: [],
-            tasks: {
-                todos: [],
-                dailys: [],
-                habits: []
-            }
+            id: ''
         },
         targetGroups: [
             {
@@ -30,14 +23,14 @@ export default new Vuex.Store({
                 id: '',
                 avg: null,
                 memberCount: null,
-                members: []
+                completionCount: null
             },
             {
                 name: '',
                 id: '',
                 avg: null,
                 memberCount: null,
-                members: []
+                completionCount: null
             }
         ],
         authenticated: false
@@ -60,7 +53,7 @@ export default new Vuex.Store({
             state.targetChallenge.tasks.dailys = challengeData.tasksOrder.dailys
             state.targetChallenge.tasks.habits = challengeData.tasksOrder.habits
         },
-        addGroupData(state, { groupData, index }) {
+        addGroupData(state, [groupData, index]) {
             let temp = {
                 // TODO: grab ID
                 name: groupData.name,
@@ -72,27 +65,16 @@ export default new Vuex.Store({
             }
         },
         setGroupAvg(state, [val, id]) {
-            state.targetGroups[id] = val
+            state.targetGroups[id].avg = val
         },
-        appendGroupMembers(state, { index, members }) {
-            state.targetGroups[index].members.push(members)
+        setCompletionCount(state, [val, id]) {
+            state.targetGroups[id].completionCount = val
         },
-        appendChallengeMembers(state, members) {
-            state.targetChallenge.members.push(members)
-        },
-        flattenGroupMembers(state, index) {
-            state.targetGroups[index].members = state.targetGroups[
-                index
-            ].members.flat()
-        },
-        flattenChallengeMembers(state) {
-            state.targetChallenge.members = state.targetChallenge.members.flat()
-        },
-        emptyGroupMembers(state, index) {
-            state.targetGroups[index].members = []
-        },
-        emptyChallengeMembers(state) {
-            state.targetChallenge.members = []
+        setGroupCompletionAvgs(state) {
+            state.targetGroups = state.targetGroups.map(group => {
+                group.avg = group.completionCount / group.memberCount
+                return group
+            })
         }
     },
     actions: {
@@ -113,144 +95,80 @@ export default new Vuex.Store({
             })
         },
         async getChallenge({ commit, state }, challengeID) {
-            console.log('Getting Challege')
-            if (state.targetChallenge.id != challengeID) {
-                // Cleanup previous information
-                commit('emptyChallengeMembers')
-
+            console.log('Getting Challenge')
+            // Don't grab information if we have it
+            if (state.targetChallenge.id !== challengeID) {
                 let challengeDataResponse = await api.get(
                     `/challenges/${challengeID}`
                 )
                 commit('addChallengeData', challengeDataResponse.data)
-
-                let newMemberIDs = []
-                let lastId = ''
-                do {
-                    let memberResponse = await api.get(
-                        `/challenges/${challengeID}/members` +
-                            (lastId !== '' ? `?lastId=${lastId}` : '')
-                    )
-                    newMemberIDs = memberResponse.data.map(member => member.id)
-                    commit('appendChallengeMembers', newMemberIDs)
-                    lastId = newMemberIDs[newMemberIDs.length - 1]
-                } while (newMemberIDs.length === 30)
-                commit('flattenChallengeMembers')
             }
             console.log('Finished getting challenge')
         },
-        async getGroup({ commit, state }, { groupID, index }) {
+        async getGroup({ commit, state }, [groupID, index, challengeId]) {
             console.log(`Getting group ${index}`)
+            // Don't get information again if we have it
             if (state.targetGroups[index].id !== groupID) {
-                // Cleanup previous information
-                commit('emptyGroupMembers', index)
-
                 let groupDataResponse = await api.get(`/groups/${groupID}`)
-                commit('addGroupData', {
-                    groupData: groupDataResponse.data,
-                    index: index
-                })
+                commit('addGroupData', [groupDataResponse.data, index])
 
-                let newMemberIDs = []
+                let continueLoop = true
                 let lastId = ''
+                let completionCount = 0
                 do {
                     let memberResponse = await api.get(
                         `/groups/${groupID}/members` +
                             (lastId !== '' ? `?lastId=${lastId}` : '')
                     )
-                    newMemberIDs = memberResponse.data.map(member => member.id)
-                    commit('appendGroupMembers', {
-                        index: index,
-                        members: newMemberIDs
+                    let newMemberIDs = memberResponse.data.map(
+                        member => member.id
+                    )
+                    let memberCompletions = await Promise.all(
+                        newMemberIDs.map(memberId =>
+                            api
+                                .get(
+                                    `/challenges/${challengeId}/members/${memberId}`
+                                )
+                                .catch(() => null)
+                        )
+                    )
+                    let memberCompletionCounts = memberCompletions.map(res => {
+                        return res !== null
+                            ? res.data.tasks.filter(task => task.completed)
+                                  .length
+                            : 0
                     })
+                    completionCount += memberCompletionCounts.reduce(
+                        (acc, x) => acc + x
+                    )
+
+                    // Loop variables
                     lastId = newMemberIDs[newMemberIDs.length - 1]
-                } while (newMemberIDs.length === 30)
-                commit('flattenGroupMembers', index)
+                    continueLoop = newMemberIDs.length === 30
+                } while (continueLoop)
+                commit('setCompletionCount', [completionCount, index])
             }
             console.log(`Finished getting group ${index}`)
         },
-        async getAverageCompletion(state, members) {
-            let completions = await Promise.all(
-                members.map(memberId => {
-                    api.get(
-                        `/challenges/${
-                            state.targetChallenge
-                        }/members/${memberId}`
-                    ).then(res => {
-                        // TODO: grab and sum all the completions from the object
-                        let completedTasks = res.data.tasks.filter(
-                            task => task.completed
-                        )
-
-                        return completedTasks.length()
-                    })
-                })
-            )
-            return (
-                completions.reduce((acc, x) => acc + x, 0) / completions.length
-            )
-        },
         battle: async function(
-            { state, dispatch, commit },
+            { dispatch, commit },
             [targetGroupOneId, targetGroupTwoId, targetChallengeId]
         ) {
             console.log('In battle')
             // Make sure we have the correct data and deal with it
             // Fail fast because we need all the information for it to work
             await Promise.all([
-                dispatch('getChallenge', targetChallengeId),
-                dispatch('getGroup', {
-                    groupID: targetGroupOneId,
-                    index: 0
-                }),
-                dispatch('getGroup', {
-                    groupID: targetGroupTwoId,
-                    index: 1
-                })
+                dispatch('getGroup', [targetGroupOneId, 0, targetChallengeId]),
+                dispatch('getGroup', [targetGroupTwoId, 1, targetChallengeId])
             ]).catch(err => {
                 console.log('Error aggregating data')
                 return Promise.reject(err)
             })
             console.log('after dispatch')
 
-            // Get members in each group that are in the challenge
-            let groupChallengeMembers = state.targetGroups.map(group => {
-                return group.members.filter(member =>
-                    state.targetChallenge.members.includes(member)
-                )
-            })
+            commit('setGroupCompletionAvgs')
 
-            // Intersection group members
-            let intersectionMembers = groupChallengeMembers[0].filter(member =>
-                groupChallengeMembers[1].includes(member)
-            )
-            //  Symmetric difference group members
-            let uniqueGroupMembers = groupChallengeMembers.map(members =>
-                members.filter(member => !intersectionMembers.includes(member))
-            )
-            if (
-                // Future prepping for more than two groups feature?!
-                // Come back next week and find out
-                uniqueGroupMembers.reduce((acc, x) => acc + x.length, 0) === 0
-            ) {
-                console.log('Bad combination')
-                return Promise.reject(
-                    'Bad Combination: No users in challenge and or groups'
-                )
-            } else {
-                // Grab the completion status of each unique member in each group
-                // average the group
-                let averages = await Promise.all(
-                    uniqueGroupMembers.map(members =>
-                        dispatch('getAverageCompletion', members)
-                    )
-                )
-
-                averages.forEach((val, index) =>
-                    commit('setGroupAvg', [val, index])
-                )
-
-                console.log('Battle computation ended')
-            }
+            console.log('Battle computation ended')
         }
     },
     getters: {
